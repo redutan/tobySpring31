@@ -10,7 +10,7 @@ import org.hsqldb.Server;
 
 import springbook.user.domain.User;
 
-public class UserDao {
+public abstract class UserDao {
 	public void add(User user) throws ClassNotFoundException, SQLException{
 		Connection c = getConnection();
 		
@@ -47,10 +47,7 @@ public class UserDao {
 		return user;
 	}
 	
-	private Connection getConnection()  throws ClassNotFoundException, SQLException{
-		Class.forName("org.hsqldb.jdbcDriver");
-		return DriverManager.getConnection("jdbc:hsqldb:hsql://localhost/test", "sa", "");
-	}
+	public abstract Connection getConnection()  throws ClassNotFoundException, SQLException;
 	
 	/**
 	 * 검증용 main 코드
@@ -59,7 +56,7 @@ public class UserDao {
 		// DB생성
 		initHsqldb();
 		
-		UserDao dao = new UserDao();
+		UserDao dao = new NUserDao();
 		
 		User user = new User();
 		user.setId("whiteship");
@@ -86,7 +83,7 @@ public class UserDao {
         hsqlServer.setLogWriter(null);
         hsqlServer.setSilent(true);
         hsqlServer.setDatabaseName(0, "test");
-        hsqlServer.setDatabasePath(0, "file:test");
+        hsqlServer.setDatabasePath(0, "file:target/test");
         hsqlServer.start();
         
 
@@ -100,5 +97,20 @@ public class UserDao {
 				"	,primary key (id) " +
 				")").execute();
         
+	}
+}
+
+class NUserDao extends UserDao {
+	public Connection getConnection() throws ClassNotFoundException, SQLException{
+		// N사 DB connection 생성코드
+		Class.forName("org.hsqldb.jdbcDriver");
+		return DriverManager.getConnection("jdbc:hsqldb:hsql://localhost/test", "sa", "");
+	}
+}
+
+class DUserDao extends UserDao {
+	public Connection getConnection() throws ClassNotFoundException, SQLException{
+		// N사 DB connection 생성코드
+		return null;
 	}
 }
