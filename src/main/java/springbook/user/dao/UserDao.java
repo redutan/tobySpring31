@@ -5,6 +5,7 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
 
 import org.hsqldb.Server;
 
@@ -54,7 +55,7 @@ public abstract class UserDao {
 	 */
 	public static void main(String[] args) throws ClassNotFoundException, SQLException{
 		// DB생성
-		initHsqldb();
+		Server hsqlServer = initHsqldb();
 		
 		UserDao dao = new NUserDao();
 		
@@ -72,9 +73,11 @@ public abstract class UserDao {
 		System.out.println(user2.getPassword());
 		
 		System.out.println(user2.getId() + " 조회 성공");
+		
+		hsqlServer.stop();
 	}
 	
-	public static void initHsqldb() throws ClassNotFoundException, SQLException{
+	public static Server initHsqldb() throws ClassNotFoundException, SQLException{
         // stub to get in/out of embedded db
         Server hsqlServer = null;
         Connection connection = null;
@@ -88,6 +91,7 @@ public abstract class UserDao {
         
 
         Class.forName("org.hsqldb.jdbcDriver");
+        try{
         connection = DriverManager.getConnection("jdbc:hsqldb:hsql://localhost/test", "sa", ""); // can through sql exception
         connection.prepareStatement(
         		"create table users(" +
@@ -96,7 +100,11 @@ public abstract class UserDao {
 				"	,password varchar(10) not null " +
 				"	,primary key (id) " +
 				")").execute();
+        }catch(SQLSyntaxErrorException e){
+        	System.out.println("중복호출로 인한 오류 " + e);
+        }
         
+        return hsqlServer;
 	}
 }
 
