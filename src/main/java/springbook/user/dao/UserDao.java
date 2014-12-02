@@ -11,9 +11,15 @@ import org.hsqldb.Server;
 
 import springbook.user.domain.User;
 
-public abstract class UserDao {
+public class UserDao {
+	private SimpleConnectionMaker simpleConnectionMaker;
+	
+	public UserDao() {
+		simpleConnectionMaker = new SimpleConnectionMaker();
+	}
+	
 	public void add(User user) throws ClassNotFoundException, SQLException{
-		Connection c = getConnection();
+		Connection c = simpleConnectionMaker.makeNewConnection();
 		
 		PreparedStatement ps = c.prepareStatement(
 				"insert into users(id, name, password) values (?, ?, ?)");
@@ -28,7 +34,7 @@ public abstract class UserDao {
 	}
 	
 	public User get(String id) throws ClassNotFoundException, SQLException{
-		Connection c = getConnection();
+		Connection c = simpleConnectionMaker.makeNewConnection();
 		
 		PreparedStatement ps = c.prepareStatement(
 				"select * from users where id = ?");
@@ -48,16 +54,18 @@ public abstract class UserDao {
 		return user;
 	}
 	
-	public abstract Connection getConnection()  throws ClassNotFoundException, SQLException;
+	//public abstract Connection getConnection()  throws ClassNotFoundException, SQLException;
 	
 	/**
 	 * 검증용 main 코드
 	 */
 	public static void main(String[] args) throws ClassNotFoundException, SQLException{
+		Server hsqlServer = null;
+		try{
 		// DB생성
-		Server hsqlServer = initHsqldb();
+		hsqlServer = initHsqldb();
 		
-		UserDao dao = new NUserDao();
+		UserDao dao = new UserDao();
 		
 		User user = new User();
 		user.setId("whiteship");
@@ -73,8 +81,10 @@ public abstract class UserDao {
 		System.out.println(user2.getPassword());
 		
 		System.out.println(user2.getId() + " 조회 성공");
-		
-		hsqlServer.stop();
+		}finally{
+			if(null != hsqlServer)
+				hsqlServer.stop();
+		}
 	}
 	
 	public static Server initHsqldb() throws ClassNotFoundException, SQLException{
