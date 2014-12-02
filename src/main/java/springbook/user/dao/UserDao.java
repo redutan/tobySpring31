@@ -5,12 +5,13 @@ import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.SQLSyntaxErrorException;
 
 import org.hsqldb.Server;
 
 import springbook.user.domain.User;
 
-public class UserDao {
+public abstract class UserDao {
 	public void add(User user) throws ClassNotFoundException, SQLException{
 		Connection c = getConnection();
 		
@@ -47,19 +48,16 @@ public class UserDao {
 		return user;
 	}
 	
-	private Connection getConnection()  throws ClassNotFoundException, SQLException{
-		Class.forName("org.hsqldb.jdbcDriver");
-		return DriverManager.getConnection("jdbc:hsqldb:hsql://localhost/test", "sa", "");
-	}
+	public abstract Connection getConnection()  throws ClassNotFoundException, SQLException;
 	
 	/**
 	 * 검증용 main 코드
 	 */
 	public static void main(String[] args) throws ClassNotFoundException, SQLException{
 		// DB생성
-		initHsqldb();
+		Server hsqlServer = initHsqldb();
 		
-		UserDao dao = new UserDao();
+		UserDao dao = new NUserDao();
 		
 		User user = new User();
 		user.setId("whiteship");
@@ -75,9 +73,11 @@ public class UserDao {
 		System.out.println(user2.getPassword());
 		
 		System.out.println(user2.getId() + " 조회 성공");
+		
+		hsqlServer.stop();
 	}
 	
-	public static void initHsqldb() throws ClassNotFoundException, SQLException{
+	public static Server initHsqldb() throws ClassNotFoundException, SQLException{
         // stub to get in/out of embedded db
         Server hsqlServer = null;
         Connection connection = null;
@@ -86,11 +86,12 @@ public class UserDao {
         hsqlServer.setLogWriter(null);
         hsqlServer.setSilent(true);
         hsqlServer.setDatabaseName(0, "test");
-        hsqlServer.setDatabasePath(0, "file:test");
+        hsqlServer.setDatabasePath(0, "file:target/test");
         hsqlServer.start();
         
 
         Class.forName("org.hsqldb.jdbcDriver");
+        try{
         connection = DriverManager.getConnection("jdbc:hsqldb:hsql://localhost/test", "sa", ""); // can through sql exception
         connection.prepareStatement(
         		"create table users(" +
@@ -99,6 +100,25 @@ public class UserDao {
 				"	,password varchar(10) not null " +
 				"	,primary key (id) " +
 				")").execute();
+        }catch(SQLSyntaxErrorException e){
+        	System.out.println("중복호출로 인한 오류 " + e);
+        }
         
+        return hsqlServer;
+	}
+}
+
+class NUserDao extends UserDao {
+	public Connection getConnection() throws ClassNotFoundException, SQLException{
+		// N사 DB connection 생성코드
+		Class.forName("org.hsqldb.jdbcDriver");
+		return DriverManager.getConnection("jdbc:hsqldb:hsql://localhost/test", "sa", "");
+	}
+}
+
+class DUserDao extends UserDao {
+	public Connection getConnection() throws ClassNotFoundException, SQLException{
+		// N사 DB connection 생성코드
+		return null;
 	}
 }
